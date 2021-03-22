@@ -1,3 +1,4 @@
 feedparser==6.0.2
 python-dotenv==0.15.0
+PyYAML==5.4.1
 sgmllib3k==1.0.0

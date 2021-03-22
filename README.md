@@ -12,6 +12,8 @@ A simple python script that reads a single feed and send pushover notifications 
 ## Usage
 
 Create env file ./rss-feed-notifier.env
+The file contents will look like this except filled in with your values.
+
     RSS='rss feed url here'
     ACCESS_TOKEN='pushover app access token here'
     USER_KEY="pushover user key here"
