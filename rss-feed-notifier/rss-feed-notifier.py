@@ -1,13 +1,25 @@
 import feedparser
-import pprint
-from dotenv import load_dotenv
 import os
 import http.client, urllib
 import logging
 import time
 import yaml
+import re
 
 # class Feed(object):
+
+def contains(words,content):
+    for word in words:
+        if re.search(r"\b" + re.escape(word) + r"\b", content):
+            return True
+    return False
+
+# def is_satisfied( rule )
+#     if rule['type'] == 'contains'
+#         return contains( rule['words'] )
+#     else:
+#         logger.error( f"Unknown rule type {rule['type']}" )
+#         return False
 
 def load_config( file_path):
     with open( file_path, 'r') as f:
@@ -16,7 +28,7 @@ def load_config( file_path):
         except:
             raise Exception
 
-def send_pushover_msg(title, msg, user_key, access_token):
+def send_pushover_msg(title, msg, priority, user_key, access_token):
     conn = http.client.HTTPSConnection("api.pushover.net:443")
     conn.request("POST", "/1/messages.json",
     urllib.parse.urlencode({
@@ -29,18 +41,13 @@ def send_pushover_msg(title, msg, user_key, access_token):
     conn.getresponse()
     time.sleep(1)
 
-
-# Just some sample keywords to search for in the title
-key_words = ['Flask','Pyramid', 'JOB']
-
-
-def contains_wanted(in_str):
-    # returns true if the in_str contains a keyword
-    # we are interested in. Case-insensitive
-    for wrd in key_words:
-        if wrd.lower() in in_str:
-            return True
-    return False
+# def contains_wanted(in_str):
+#     # returns true if the in_str contains a keyword
+#     # we are interested in. Case-insensitive
+#     for wrd in key_words:
+#         if wrd.lower() in in_str:
+#             return True
+#     return False
 
 def url_is_new(urlstr, url_log_path):
     # returns true if the url string does not exist 
@@ -65,26 +72,36 @@ def main():
     rss_feeds = config['rss_feeds']
     url_log_path = config['url_log_path']
 
-
     for rss_feed in rss_feeds:
         # rss = 'https://www.reddit.com/r/Python/.rss'
-        feed = feedparser.parse(rss_feed['url'])
-        for key in feed["entries"]: 
-            url = key['links'][0]['href']
-            title = key['title']
-            content = key['content']
+        if not rss_feed['enabled']:
+            pass
+        else:
+            feed = feedparser.parse(rss_feed['url'])
+            for key in feed["entries"]: 
+                url = key['links'][0]['href']
+                title = key['title']
+                content = key['content']
 
-            # if contains_wanted(title.lower()) and url_is_new(url):
-            if url_is_new(url,url_log_path):
-                # create message body
-                print(f"{title} - {url}")
-                msgtitle = title
-                msg = f"{title}\n{url}"
-                priority = 0
-                send_pushover_msg(msgtitle, msg, priority, user_key, access_token)
+                if url_is_new(url,url_log_path):
+                    if 'rule' not in rss_feed.keys():
+                        # create message body
+                        print(f"{title} - {url}")
+                        msgtitle = title
+                        msg = f"{title}\n{url}"
+                        priority = -1  if not 'priority' in rss_feed.keys() else rss_feed['priority']   
+                        send_pushover_msg(msgtitle, msg, priority, user_key, access_token)
+                    elif 'contains' in rss_feed['rule']['type'] and contains( rss_feed['rule']['words'], content[0]['value'] ):
+                        # create message body
+                        print(f"{title} - {url}")
+                        msgtitle = title
+                        msg = f"{title}\n{url}"
+                        priority = -1  if not 'priority' in rss_feed.keys() else rss_feed['priority']   
+                        send_pushover_msg(msgtitle, msg, priority, user_key, access_token)
 
-                with open( url_log_path, 'a') as f:
-                    f.write('{}\n'.format(url))
+                    with open( url_log_path, 'a') as f:
+                        f.write('{}\n'.format(url))
+
 
 if __name__ == "__main__":
     main()
