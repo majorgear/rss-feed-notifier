@@ -5,8 +5,16 @@ import logging
 import time
 import yaml
 import re
-
+import argparse
 # class Feed(object):
+
+def create_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument( "--config", default="conf/rss-feed-notifier.yml", help="Path to yml configuration file."  )
+    # parser.add_argument( "-c,--config", actions="store", help="Path to yml configuration file."  )
+    args = parser.parse_args()
+    print(args.config)
+    return args 
 
 def contains(words,content):
     for word in words:
@@ -65,7 +73,8 @@ def url_is_new(urlstr, url_log_path):
             return True
 
 def main():
-    config = load_config('./conf/rss-feed-notifier.yml')
+    args = create_arguments()
+    config = load_config(args.config)
     app_log_path = config['app_log_path']
     access_token = config['access_token']
     user_key = config['user_key']
